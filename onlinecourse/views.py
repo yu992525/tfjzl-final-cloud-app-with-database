@@ -111,7 +111,15 @@ def enroll(request, course_id):
          # Add each selected choice object to the submission object
          # Redirect to show_exam_result with the submission id
 #def submit(request, course_id):
-
+    # An example method to collect the selected choices from the exam form from the request object
+def extract_answers(request):
+    submitted_anwsers = []  # <--- Indented 4 spaces
+    for key in request.POST:
+        if key.startswith('choice'):
+            value = request.POST[key]
+            choice_id = int(value)
+            submitted_anwsers.append(choice_id)
+    return submitted_anwsers # <--- Indented 4 spaces
 
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
 # you may implement it based on the following logic:
@@ -123,30 +131,21 @@ def enroll(request, course_id):
 def submit(request, course_id):
     if request.method == 'POST':
         course = get_object_or_404(Course, pk=course_id)
-        # 1. Use your extract_answers helper
+        # Find the enrollment for this user and this course
+        enrollment = get_object_or_404(Enrollment, user=request.user, course=course)
+        
         selected_ids = extract_answers(request)
         
-        # 2. Create a new submission object
-        submission = Submission.objects.create(course=course)
+        # Change 'course=course' to 'enrollment=enrollment'
+        submission = Submission.objects.create(enrollment=enrollment)
         
-        # 3. Save the selected choices to the submission
         for choice_id in selected_ids:
             choice = get_object_or_404(Choice, pk=choice_id)
             submission.choices.add(choice)
             
-        # 4. Redirect to the result view
-        return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result', 
+        return HttpResponseRedirect(reverse(viewname='onlinecourse:exam_result', 
                                             args=(course.id, submission.id)))
 
-    # An example method to collect the selected choices from the exam form from the request object
-    def extract_answers(request):
-        submitted_anwsers = []  # <--- Indented 4 spaces
-        for key in request.POST:
-            if key.startswith('choice'):
-                value = request.POST[key]
-                choice_id = int(value)
-                submitted_anwsers.append(choice_id)
-        return submitted_anwsers # <--- Indented 4 spaces
 
 def show_exam_result(request, course_id, submission_id):
         context = {}
